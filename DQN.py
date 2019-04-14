@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation
 import numpy as np
 import keras
+from keras.layers import Flatten, Dense
 #from IPython.display import HTML
 
 #----------------------------------------------------------------------
@@ -111,15 +112,15 @@ class DQN:
         
         # Splitting into value and advantage stream
         self.valuestream, self.advantagestream = tf.split(self.conv4, 2, 3)
-        print(self.valuestream)
-        self.valuestream = tf.layers.flatten(self.valuestream)
-        self.advantagestream = tf.layers.flatten(self.advantagestream)
-        self.advantage = tf.layers.dense(
-            inputs=self.advantagestream, units=self.n_actions,
-            kernel_initializer=tf.variance_scaling_initializer(scale=2), name="advantage")
-        self.value = tf.layers.dense(
-            inputs=self.valuestream, units=1, 
-            kernel_initializer=tf.variance_scaling_initializer(scale=2), name='value')
+#         print(self.valuestream)
+#         print(self.advantagestream)
+        self.valuestream = tf.keras.layers.Flatten()(self.valuestream)
+        self.advantagestream = tf.keras.layers.Flatten()(self.advantagestream)
+        self.advantage = tf.keras.layers.Dense(units=self.n_actions, 
+            kernel_initializer=tf.variance_scaling_initializer(scale=2), name="advantage")(inputs=self.advantagestream)
+        
+        self.value = tf.keras.layers.Dense(
+            units=1, kernel_initializer=tf.variance_scaling_initializer(scale=2), name='value')(inputs=self.valuestream)
         
         # Combining value and advantage into Q-values as described above
         self.q_values = self.value + tf.subtract(self.advantage, tf.reduce_mean(self.advantage, axis=1, keepdims=True))
@@ -426,7 +427,7 @@ def generate_gif(frame_number, frames_for_gif, reward, path):
     """
     for idx, frame_idx in enumerate(frames_for_gif): 
         frames_for_gif[idx] = resize(frame_idx, (420, 320, 3), 
-                                     preserve_range=True, order=0, mode='constant').astype(np.uint8)
+                                     preserve_range=True, order=0, mode='constant',anti_aliasing=True, anti_aliasing_sigma=None).astype(np.uint8)
         
     imageio.mimsave("{0}{1}".format(path,'ATARI_frame_{0}_reward_{1}.gif'.format(frame_number, reward)), 
                     frames_for_gif, duration=1/30)
@@ -584,7 +585,7 @@ LEARNING_RATE = 0.00001          # Set to 0.00025 in Pong for quicker results.
                                  # Hessel et al. 2017 used 0.0000625
 BS = 32                          # Batch size
 
-PATH = "./outputs/"                 # Gifs and checkpoints will be saved here
+PATH = "./outputs/"              # Gifs and checkpoints will be saved here
 SUMMARIES = "summaries"          # logdir for tensorboard
 RUNID = 'run_1'
 if(not os.path.isdir(PATH)) :
@@ -687,4 +688,3 @@ if TEST:
         #Create Images as Output
         #generate_gif(0, frames_for_gif, episode_reward_sum, gif_path) 
         #print("Gif created, check the folder {}".format(gif_path))
-

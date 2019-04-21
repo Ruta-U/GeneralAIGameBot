@@ -494,8 +494,8 @@ def train():
                     
                     print(len(rewards), frame_number, np.mean(rewards[-100:]))
                     with open('rewards.dat', 'a') as reward_file:
-                        print(len(rewards), frame_number, np.mean(rewards[-100:]))
-                        reward_file.write(len(rewards), frame_number, np.mean(rewards[-100:]))
+#                         print(len(rewards), frame_number, np.mean(rewards[-100:]))
+                        reward_file.write("{}, {}, {}\n".format(len(rewards),frame_number,np.mean(rewards[-100:])))
             
 
             #---- Evaluation ----#

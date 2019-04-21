@@ -1,14 +1,17 @@
 #----------------------------------------------------------------------
 #Global Variables
 #Variables for controlling Train and Test with the Atari Game
-TRAIN = True
-TEST = False
+TRAIN = False
+TEST = True
 
 # Atari Game Top Play Choice
-#ENV_NAME = 'BreakoutDeterministic-v4' #1st Game Train (The environment has the following 4 actions: ['NOOP', 'FIRE', 'RIGHT', 'LEFT'])
-ENV_NAME = 'PongDeterministic-v4'    #2nd Game Train (The environment has the following 6 actions: ['NOOP', 'FIRE', 'RIGHT', 'LEFT', 'RIGHTFIRE', 'LEFTFIRE'])
+#ENV_NAME = 'BreakoutDeterministic-v4' #1st Game Train
+ENV_NAME = 'PongDeterministic-v4'    #2nd Game Train
 
 # increase the learning rate to 0.00025 in Pong for quicker results
+
+#----------------------------------------------------------------------
+#Used Implementation of DeepMind's Deep Q-Learning by Fabio M. Graetz as Reference
 
 #----------------------------------------------------------------------
 #Import Files
@@ -19,13 +22,7 @@ import tensorflow as tf
 import numpy as np
 import imageio
 from skimage.transform import resize
-import matplotlib.pyplot as plt
-import matplotlib.animation
-import numpy as np
-import keras
 from keras.layers import Flatten, Dense
-#from IPython.display import HTML
-
 #----------------------------------------------------------------------
 #Classes
 #-----------------------------------------
@@ -112,16 +109,13 @@ class DQN:
         
         # Splitting into value and advantage stream
         self.valuestream, self.advantagestream = tf.split(self.conv4, 2, 3)
-#         print(self.valuestream)
-#         print(self.advantagestream)
         self.valuestream = tf.keras.layers.Flatten()(self.valuestream)
         self.advantagestream = tf.keras.layers.Flatten()(self.advantagestream)
         self.advantage = tf.keras.layers.Dense(units=self.n_actions, 
-            kernel_initializer=tf.variance_scaling_initializer(scale=2), name="advantage")(inputs=self.advantagestream)
-        
+            kernel_initializer=tf.variance_scaling_initializer(scale=2), name="advantage")(inputs=self.advantagestream)      
         self.value = tf.keras.layers.Dense(
             units=1, kernel_initializer=tf.variance_scaling_initializer(scale=2), name='value')(inputs=self.valuestream)
-        
+           
         # Combining value and advantage into Q-values as described above
         self.q_values = self.value + tf.subtract(self.advantage, tf.reduce_mean(self.advantage, axis=1, keepdims=True))
         self.best_action = tf.argmax(self.q_values, 1)
@@ -427,7 +421,7 @@ def generate_gif(frame_number, frames_for_gif, reward, path):
     """
     for idx, frame_idx in enumerate(frames_for_gif): 
         frames_for_gif[idx] = resize(frame_idx, (420, 320, 3), 
-                                     preserve_range=True, order=0, mode='constant',anti_aliasing=True, anti_aliasing_sigma=None).astype(np.uint8)
+                                     preserve_range=True, order=0).astype(np.uint8)
         
     imageio.mimsave("{0}{1}".format(path,'ATARI_frame_{0}_reward_{1}.gif'.format(frame_number, reward)), 
                     frames_for_gif, duration=1/30)
@@ -500,8 +494,8 @@ def train():
                     
                     print(len(rewards), frame_number, np.mean(rewards[-100:]))
                     with open('rewards.dat', 'a') as reward_file:
-                        #print(len(rewards), frame_number, np.mean(rewards[-100:]))
-                        reward_file.write("{}, {}, {}\n".format(len(rewards),frame_number,np.mean(rewards[-100:])))
+                        print(len(rewards), frame_number, np.mean(rewards[-100:]))
+                        reward_file.write(len(rewards), frame_number, np.mean(rewards[-100:]))
             
 
             #---- Evaluation ----#
@@ -550,7 +544,7 @@ def train():
             SUMM_WRITER.add_summary(summ, frame_number)
             with open('rewardsEval.dat', 'a') as eval_reward_file:
                 print(frame_number, np.mean(eval_rewards))
-                eval_reward_file.write("{}, {}\n".format(frame_number, np.mean(eval_rewards)))
+                eval_reward_file.write(frame_number, np.mean(eval_rewards))
 
 
 #-------------------------------------------------------------------------------------------
@@ -585,7 +579,7 @@ LEARNING_RATE = 0.00001          # Set to 0.00025 in Pong for quicker results.
                                  # Hessel et al. 2017 used 0.0000625
 BS = 32                          # Batch size
 
-PATH = "./outputs/"              # Gifs and checkpoints will be saved here
+PATH = "./outputs/"                 # Gifs and checkpoints will be saved here
 SUMMARIES = "summaries"          # logdir for tensorboard
 RUNID = 'run_1'
 if(not os.path.isdir(PATH)) :
@@ -653,8 +647,8 @@ if TEST:
         os.makedirs(gif_path)
 
     if ENV_NAME == 'BreakoutDeterministic-v4':
-        trained_path = 'trained/breakout'
-        save_file = 'my_model-15845555.meta'
+        trained_path = "trained/breakout/"
+        save_file = "my_model-15845555.meta"
     
     elif ENV_NAME == 'PongDeterministic-v4':
         trained_path = "trained/pong/"
@@ -672,7 +666,6 @@ if TEST:
         episode_reward_sum = 0
         while True:
             atari.env.render()
-            
             action = 1 if terminal_live_lost else action_getter.get_action(sess, 0, atari.state, 
                                                                            MAIN_DQN, 
                                                                            evaluation = True)
@@ -684,7 +677,7 @@ if TEST:
         
         atari.env.close()
         print("The total reward is {}".format(episode_reward_sum))
-        #print("Creating gif...")
-        #Create Images as Output
-        #generate_gif(0, frames_for_gif, episode_reward_sum, gif_path) 
-        #print("Gif created, check the folder {}".format(gif_path))
+        print("Creating gif...")
+#         Create Images as Output
+        generate_gif(0, frames_for_gif, episode_reward_sum, gif_path) 
+        print("Gif created, check the folder {}".format(gif_path))

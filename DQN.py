@@ -544,7 +544,7 @@ def train():
             SUMM_WRITER.add_summary(summ, frame_number)
             with open('rewardsEval.dat', 'a') as eval_reward_file:
                 print(frame_number, np.mean(eval_rewards))
-                eval_reward_file.write(frame_number, np.mean(eval_rewards))
+                eval_reward_file.write("{},{}\n".format(frame_number, np.mean(eval_rewards)))
 
 
 #-------------------------------------------------------------------------------------------
